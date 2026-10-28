@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hábitos de Yorlin</title>
+    
+    <!-- Favicon de cerebrito para navegador y móvil -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
+
+    <!-- Configuración PWA móvil -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#020617">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            850: '#151f32',
+                            950: '#070b14',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex justify-center items-start sm:py-6 selection:bg-indigo-500 selection:text-white">
+
+    <!-- Contenedor App Móvil -->
+    <div class="w-full max-w-md bg-slate-900 sm:rounded-[2.5rem] sm:border-[6px] sm:border-slate-800 shadow-2xl min-h-screen sm:min-h-[840px] flex flex-col justify-between overflow-hidden relative">
+
+        <!-- Header Superior Fijo -->
+        <header class="px-5 pt-6 pb-4 bg-slate-900/90 backdrop-blur-md sticky top-0 z-30 border-b border-slate-800/80">
+            <div class="flex justify-between items-center mb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-xl shadow-inner select-none">
+                        🧠
+                    </div>
+                    <div>
+                        <h1 class="text-base font-extrabold tracking-tight text-white leading-tight">Hábitos de Yorlin</h1>
+                        <p class="text-[11px] text-slate-400 font-semibold" id="semanaTexto">Cargando fecha...</p>
+                    </div>
+                </div>
+
+                <!-- Navegación de semanas -->
+                <div class="flex items-center gap-1.5 opacity-30 pointer-events-none" id="navSemanasContenedor">
+                    <button type="button" onclick="cambiarSemana(-1)" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 transition" title="Semana anterior">
+                        <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                    </button>
+                    <button type="button" onclick="resetSemanaActual()" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs text-slate-300 font-semibold transition" title="Semana en curso">
+                        Hoy
+                    </button>
+                    <button type="button" onclick="cambiarSemana(1)" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 transition" title="Semana siguiente">
+                        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Resumen Rápido Superior -->
+            <div class="grid grid-cols-3 gap-2 mt-3">
+                <div class="bg-slate-800/70 border border-slate-700/60 rounded-2xl p-2.5 text-center">
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Hoy</span>
+                    <span class="text-base font-extrabold text-emerald-400" id="kpiCompletadosHoy">0 / 0</span>
+                </div>
+                <div class="bg-slate-800/70 border border-slate-700/60 rounded-2xl p-2.5 text-center">
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider" id="kpiMesLabel">Mes</span>
+                    <span class="text-base font-extrabold text-indigo-400" id="kpiCumplimiento">0%</span>
+                </div>
+                <div class="bg-slate-800/70 border border-slate-700/60 rounded-2xl p-2.5 text-center">
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Mejor Racha</span>
+                    <span class="text-base font-extrabold text-amber-400 flex items-center justify-center gap-1" id="kpiMejorRacha">
+                        <i data-lucide="zap" class="w-3.5 h-3.5 fill-amber-400"></i> 0d
+                    </span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navegación entre 4 Pestañas -->
+        <div class="px-5 pt-3">
+            <div class="grid grid-cols-4 bg-slate-800/80 p-1 rounded-xl border border-slate-700/50 gap-0.5">
+                <button type="button" onclick="setTab('hoy')" id="tabHoy" class="py-1.5 text-[11px] font-bold rounded-lg bg-indigo-600 text-white shadow-sm transition text-center truncate">
+                    Solo Hoy
+                </button>
+                <button type="button" onclick="setTab('semanal')" id="tabSemanal" class="py-1.5 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white transition text-center truncate">
+                    Semanal
+                </button>
+                <button type="button" onclick="setTab('grafico')" id="tabGrafico" class="py-1.5 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white transition text-center truncate">
+                    Métricas
+                </button>
+                <button type="button" onclick="setTab('mejorar')" id="tabMejorar" class="py-1.5 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white transition text-center truncate flex items-center justify-center gap-1">
+                    <span>🚨</span> Por Mejorar
+                </button>
+            </div>
+        </div>
+
+        <!-- Contenido Desplazable -->
+        <main class="flex-1 overflow-y-auto no-scrollbar px-5 py-4 space-y-4">
+
+            <!-- VISTA 1: Marcar Solo Hoy -->
+            <section id="viewHoy" class="space-y-3 pb-16">
+                <div class="bg-indigo-500/10 border border-indigo-500/30 rounded-2xl p-3.5 flex items-center justify-between">
+                    <div class="pr-2">
+                        <div class="flex items-center gap-1.5 text-indigo-300 font-bold text-xs">
+                            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-indigo-400"></i>
+                            <span>Modo Enfoque Diario</span>
+                        </div>
+                        <p class="text-xs text-slate-300 italic font-medium mt-1 leading-snug" id="fraseMotivacion">
+                            "La constancia de hoy construye tus metas de mañana."
+                        </p>
+                    </div>
+                    <span class="text-xs font-extrabold px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 shrink-0 self-start" id="badgeDiaActual">Hoy</span>
+                </div>
+
+                <div id="listaHabitosHoy" class="space-y-2.5"></div>
+            </section>
+
+            <!-- VISTA 2: Cuadrícula Semanal Completa -->
+            <section id="viewSemanal" class="hidden space-y-3 pb-16">
+                <div class="grid grid-cols-[1fr,repeat(7,28px)] gap-1 px-2 text-center text-[11px] font-bold text-slate-400">
+                    <div class="text-left">Hábito</div>
+                    <div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div>
+                </div>
+
+                <div id="listaHabitosSemanal" class="space-y-2.5"></div>
+            </section>
+
+            <!-- VISTA 3: Estadísticas (Por Días y Por Meses) -->
+            <section id="viewGrafico" class="hidden space-y-4 pb-16">
+                <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider" id="tituloGrafico">Cumplimiento por Día</h3>
+                        <div class="flex bg-slate-900 p-0.5 rounded-lg border border-slate-700">
+                            <button type="button" onclick="setModoGrafico('dias')" id="btnModoDias" class="text-[10px] font-bold px-2 py-1 rounded bg-indigo-600 text-white transition">Días</button>
+                            <button type="button" onclick="setModoGrafico('meses')" id="btnModoMeses" class="text-[10px] font-bold px-2 py-1 rounded text-slate-400 hover:text-white transition">Meses</button>
+                        </div>
+                    </div>
+                    <div class="h-48 relative flex items-center justify-center">
+                        <canvas id="chartDias"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Tus Rachas y Alertas</h3>
+                    <div id="listaRachasDetalle" class="space-y-2"></div>
+                </div>
+            </section>
+
+            <!-- VISTA 4: POR MEJORAR CON MOTIVOS PERSONALIZADOS -->
+            <section id="viewMejorar" class="hidden space-y-3 pb-16">
+                <div class="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-3.5 flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 shrink-0 mt-0.5">
+                        <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-bold text-rose-300">¿Por qué debes mejorar esto?</h3>
+                        <p class="text-[11px] text-slate-300 mt-0.5 leading-snug">
+                            Tus hábitos más rezagados en el mes, con la razón y propósito clave para no aflojar el ritmo.
+                        </p>
+                    </div>
+                </div>
+
+                <div id="listaHabitosMejorar" class="space-y-2.5"></div>
+            </section>
+
+        </main>
+
+        <!-- Barra Inferior -->
+        <footer class="px-5 py-3.5 bg-slate-900/95 border-t border-slate-800 flex justify-between items-center z-20">
+            <span class="text-xs text-slate-400 flex items-center gap-1.5">
+                <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i> Guardado en celular
+            </span>
+            <button type="button" onclick="abrirModalHabito()" class="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-lg shadow-indigo-600/25 transition">
+                <i data-lucide="plus" class="w-4 h-4"></i> Nuevo Hábito
+            </button>
+        </footer>
+
+        <!-- MODAL: Crear o Editar Hábito -->
+        <div id="modalHabito" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+            <div class="bg-slate-900 border-t sm:border border-slate-800 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 space-y-4 max-h-[90vh] overflow-y-auto no-scrollbar">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-base font-bold text-white" id="modalTitulo">Nuevo Hábito</h2>
+                    <button type="button" onclick="cerrarModalHabito()" class="p-1 rounded-lg bg-slate-800 text-slate-400 hover:text-white">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <form id="formHabito" class="space-y-3.5">
+                    <input type="hidden" id="habitoIdEdit" value="">
+
+                    <div>
+                        <label class="text-xs text-slate-400 block mb-1">Nombre del hábito</label>
+                        <input type="text" id="habitoNombre" required placeholder="Ej: Practicar inglés, Leer..." class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs text-slate-400 block mb-1">Emoji / Icono</label>
+                            <input type="text" id="habitoIcono" maxlength="2" value="⚡" class="w-full text-center text-lg bg-slate-800 border border-slate-700 rounded-xl py-2 text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400 block mb-1">Meta semanal (días)</label>
+                            <input type="number" id="habitoMeta" min="1" max="7" value="5" class="w-full text-center bg-slate-800 border border-slate-700 rounded-xl py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+                    </div>
+
+                    <!-- Campo: Razón / Por qué mejorar -->
+                    <div>
+                        <label class="text-xs text-amber-300 font-semibold block mb-1">¿Por qué debes mejorar esto? (Motivo clave)</label>
+                        <textarea id="habitoMotivo" rows="2" placeholder="Ej: Viajar a cubrir el mundial y comunicarme sin trabas en otro país..." class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="text-xs text-slate-400 block mb-1.5">Color de tarjeta</label>
+                        <div class="flex gap-2.5 justify-center py-1" id="colorPicker">
+                            <button type="button" onclick="selectColor('#6366f1', this)" class="w-7 h-7 rounded-full bg-indigo-500 ring-2 ring-white"></button>
+                            <button type="button" onclick="selectColor('#10b981', this)" class="w-7 h-7 rounded-full bg-emerald-500"></button>
+                            <button type="button" onclick="selectColor('#f59e0b', this)" class="w-7 h-7 rounded-full bg-amber-500"></button>
+                            <button type="button" onclick="selectColor('#ec4899', this)" class="w-7 h-7 rounded-full bg-pink-500"></button>
+                            <button type="button" onclick="selectColor('#06b6d4', this)" class="w-7 h-7 rounded-full bg-cyan-500"></button>
+                        </div>
+                        <input type="hidden" id="habitoColor" value="#6366f1">
+                    </div>
+
+                    <div class="pt-2 space-y-2">
+                        <button type="submit" id="btnGuardarHabito" class="w-full bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold py-3 rounded-xl transition text-sm">
+                            Guardar Hábito
+                        </button>
+                        
+                        <button type="button" id="btnEliminarEnModal" onclick="confirmarEliminarDesdeModal()" class="w-full hidden items-center justify-center gap-2 bg-red-500/15 hover:bg-red-500/25 active:scale-95 text-red-400 border border-red-500/30 font-semibold py-2.5 rounded-xl transition text-xs">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            Eliminar este hábito
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const FRASES_MOTIVACIONALES = [
+            "La disciplina de hoy es la libertad del mañana.",
+            "Cada pequeño paso diario cuenta más que la perfección.",
+            "No te detengas: la constancia vence al talento.",
+            "Gana la mañana y ganarás el día entero.",
+            "Hazlo por la persona en la que te estás convirtiendo.",
+            "Un día o el primer día. Tú decides.",
+            "El éxito es la suma de pequeños esfuerzos repetidos hoy.",
+            "Tu único rival es la versión de ti de ayer.",
+            "La motivación te inicia, el hábito te mantiene avanzando.",
+            "Cumple tu palabra contigo mismo hoy."
+        ];
+
+        // Hábitos iniciales
+        const HABITOS_DEFECTO = [
+            { 
+                id: 1, 
+                nombre: 'Practicar inglés', 
+                icono: '🗣️', 
+                meta: 5, 
+                color: '#6366f1',
+                motivo: 'Para viajar a cubrir el mundial y comunicarte con fluidez en cualquier país sin barreras.' 
+            },
+            { 
+                id: 2, 
+                nombre: 'Avanzar proyectos', 
+                icono: '💻', 
+                meta: 5, 
+                color: '#06b6d4',
+                motivo: 'Para terminar tus entregas de diseño y proyectos digitales con ventaja y sin estrés de última hora.' 
+            },
+            { 
+                id: 3, 
+                nombre: 'Entrenamiento físico', 
+                icono: '⚽', 
+                meta: 4, 
+                color: '#10b981',
+                motivo: 'Para mantener resistencia, velocidad en la cancha y energía alta en el día a día.' 
+            },
+            { 
+                id: 4, 
+                nombre: 'Lectura diaria', 
+                icono: '📚', 
+                meta: 6, 
+                color: '#f59e0b',
+                motivo: 'Para expandir criterio, enfoque mental y vocabulario para tus ideas y metas.' 
+            },
+            { 
+                id: 5, 
+                nombre: 'Tomar 2L de agua', 
+                icono: '💧', 
+                meta: 7, 
+                color: '#3b82f6',
+                motivo: 'Para mantener máxima concentración, evitar fatiga y rendir al 100% todo el día.' 
+            }
+        ];
+
+        let habitos = [];
+        let registros = {};
+        let offsetSemanas = 0;
+        let tabActual = 'hoy';
+        let modoGrafico = 'dias';
+        let chartInstance = null;
+
+        function cargarStorage() {
+            const h = localStorage.getItem('habitflow_items');
+            habitos = h ? JSON.parse(h) : HABITOS_DEFECTO;
+
+            const yaReseteado = localStorage.getItem('habitflow_reset_v5');
+            if (!yaReseteado) {
+                registros = {};
+                localStorage.setItem('habitflow_regs', JSON.stringify({}));
+                localStorage.setItem('habitflow_reset_v5', 'true');
+            } else {
+                const r = localStorage.getItem('habitflow_regs');
+                registros = r ? JSON.parse(r) : {};
+            }
+
+            guardarStorage();
+        }
+
+        function guardarStorage() {
+            localStorage.setItem('habitflow_items', JSON.stringify(habitos));
+            localStorage.setItem('habitflow_regs', JSON.stringify(registros));
+            actualizarTodo();
+        }
+
+        function getEstadisticasMesHabito(habitoId) {
+            const hoy = new Date();
+            const anioActual = hoy.getFullYear();
+            const mesActual = hoy.getMonth();
+            const diasTranscurridos = hoy.getDate();
+
+            let diasCompletados = 0;
+            for (let d = 1; d <= diasTranscurridos; d++) {
+                const f = new Date(anioActual, mesActual, d);
+                const iso = formatISO(f);
+                if (registros[iso] && registros[iso][habitoId]) {
+                    diasCompletados++;
+                }
+            }
+
+            const pct = diasTranscurridos > 0 ? Math.round((diasCompletados / diasTranscurridos) * 100) : 0;
+            return { diasCompletados, diasTranscurridos, pct };
+        }
+
+        function getIconoAlerta(pct) {
+            if (pct < 40) {
+                return `<span class="inline-flex items-center text-xs animate-bounce" title="Rendimiento crítico en el mes">🚨</span>`;
+            } else if (pct < 70) {
+                return `<span class="inline-flex items-center text-xs" title="Atención requerida este mes">⚠️</span>`;
+            }
+            return '';
+        }
+
+        function abrirModalHabito() {
+            document.getElementById('modalTitulo').textContent = 'Nuevo Hábito';
+            document.getElementById('btnGuardarHabito').textContent = 'Guardar Hábito';
+            document.getElementById('btnEliminarEnModal').classList.add('hidden');
+            document.getElementById('btnEliminarEnModal').classList.remove('flex');
+            document.getElementById('habitoIdEdit').value = '';
+            document.getElementById('habitoNombre').value = '';
+            document.getElementById('habitoIcono').value = '⚡';
+            document.getElementById('habitoMeta').value = '5';
+            document.getElementById('habitoMotivo').value = '';
+            selectColor('#6366f1');
+            document.getElementById('modalHabito').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function editarHabito(id, event) {
+            if (event) event.stopPropagation();
+            const h = habitos.find(item => item.id === id);
+            if (!h) return;
+
+            document.getElementById('modalTitulo').textContent = 'Editar Hábito';
+            document.getElementById('btnGuardarHabito').textContent = 'Guardar Cambios';
+            
+            const btnEliminar = document.getElementById('btnEliminarEnModal');
+            btnEliminar.classList.remove('hidden');
+            btnEliminar.classList.add('flex');
+
+            document.getElementById('habitoIdEdit').value = h.id;
+            document.getElementById('habitoNombre').value = h.nombre;
+            document.getElementById('habitoIcono').value = h.icono || '⚡';
+            document.getElementById('habitoMeta').value = h.meta || 5;
+            document.getElementById('habitoMotivo').value = h.motivo || '';
+            selectColor(h.color || '#6366f1');
+
+            document.getElementById('modalHabito').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function confirmarEliminarDesdeModal() {
+            const editId = document.getElementById('habitoIdEdit').value;
+            if (!editId) return;
+
+            const h = habitos.find(item => item.id == editId);
+            const nombre = h ? h.nombre : 'este hábito';
+
+            const confirmar = confirm(`¿Estás seguro de que deseas eliminar el hábito "${nombre}"?`);
+            if (!confirmar) return;
+
+            habitos = habitos.filter(item => item.id != editId);
+            Object.keys(registros).forEach(fechaKey => {
+                if (registros[fechaKey] && registros[fechaKey][editId]) {
+                    delete registros[fechaKey][editId];
+                }
+            });
+
+            cerrarModalHabito();
+            guardarStorage();
+        }
+
+        function cerrarModalHabito() {
+            document.getElementById('modalHabito').classList.add('hidden');
+        }
+
+        function getLunesSemana(offset = 0) {
+            const d = new Date();
+            d.setHours(0, 0, 0, 0);
+            const diaActual = d.getDay();
+            const distanciaLunes = diaActual === 0 ? -6 : 1 - diaActual;
+            d.setDate(d.getDate() + distanciaLunes + (offset * 7));
+            return d;
+        }
+
+        function formatISO(fecha) {
+            const y = fecha.getFullYear();
+            const m = String(fecha.getMonth() + 1).padStart(2, '0');
+            const d = String(fecha.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function getDiasSemanaActual() {
+            const lunes = getLunesSemana(offsetSemanas);
+            const dias = [];
+            for (let i = 0; i < 7; i++) {
+                const temp = new Date(lunes);
+                temp.setDate(temp.getDate() + i);
+                dias.push({
+                    fecha: temp,
+                    iso: formatISO(temp),
+                    diaMes: temp.getDate()
+                });
+            }
+            return dias;
+        }
+
+        function actualizarFraseDelDia() {
+            const ahora = new Date();
+            const inicioAnio = new Date(ahora.getFullYear(), 0, 0);
+            const diff = ahora - inicioAnio;
+            const unDia = 1000 * 60 * 60 * 24;
+            const diaDelAnio = Math.floor(diff / unDia);
+            const indiceFrase = diaDelAnio % FRASES_MOTIVACIONALES.length;
+            
+            const el = document.getElementById('fraseMotivacion');
+            if (el) {
+                el.textContent = `"${FRASES_MOTIVACIONALES[indiceFrase]}"`;
+            }
+        }
+
+        function actualizarTextoCabecera() {
+            const el = document.getElementById('semanaTexto');
+            const nav = document.getElementById('navSemanasContenedor');
+            if (!el) return;
+
+            const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            const diasNombres = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+            if (tabActual === 'hoy') {
+                const hoy = new Date();
+                const diaNombre = diasNombres[hoy.getDay()];
+                const diaNum = hoy.getDate();
+                const mes = meses[hoy.getMonth()];
+                el.textContent = `${diaNombre}, ${diaNum} de ${mes}`;
+                if (nav) nav.classList.add('opacity-30', 'pointer-events-none');
+            } else if (tabActual === 'mejorar') {
+                const hoy = new Date();
+                el.textContent = `Diagnóstico de ${meses[hoy.getMonth()]}`;
+                if (nav) nav.classList.add('opacity-30', 'pointer-events-none');
+            } else {
+                if (nav) nav.classList.remove('opacity-30', 'pointer-events-none');
+                const diasSemana = getDiasSemanaActual();
+                const inicio = diasSemana[0].fecha;
+                const fin = diasSemana[6].fecha;
+                
+                let texto = `${inicio.getDate()} ${meses[inicio.getMonth()]} - ${fin.getDate()} ${meses[fin.getMonth()]}`;
+                if (inicio.getFullYear() !== fin.getFullYear()) {
+                    texto = `${inicio.getDate()} ${meses[inicio.getMonth()]} ${inicio.getFullYear()} - ${fin.getDate()} ${meses[fin.getMonth()]} ${fin.getFullYear()}`;
+                }
+                el.textContent = texto;
+            }
+        }
+
+        function cambiarSemana(delta) {
+            offsetSemanas += delta;
+            actualizarTodo();
+        }
+
+        function resetSemanaActual() {
+            offsetSemanas = 0;
+            actualizarTodo();
+        }
+
+        function toggleHabito(id, isoFecha) {
+            const hoyISO = formatISO(new Date());
+            if (isoFecha !== hoyISO) return;
+
+            if (!registros[isoFecha]) registros[isoFecha] = {};
+            registros[isoFecha][id] = !registros[isoFecha][id];
+            guardarStorage();
+        }
+
+        function calcularRacha(habitoId) {
+            let racha = 0;
+            let cursor = new Date();
+            cursor.setHours(0, 0, 0, 0);
+
+            const hoyISO = formatISO(cursor);
+            if (!registros[hoyISO] || !registros[hoyISO][habitoId]) {
+                cursor.setDate(cursor.getDate() - 1);
+            }
+
+            while (true) {
+                const iso = formatISO(cursor);
+                if (registros[iso] && registros[iso][habitoId]) {
+                    racha++;
+                    cursor.setDate(cursor.getDate() - 1);
+                } else {
+                    break;
+                }
+            }
+            return racha;
+        }
+
+        // VISTA 1: SOLO HOY
+        function renderizarHoy() {
+            const contenedor = document.getElementById('listaHabitosHoy');
+            const hoyISO = formatISO(new Date());
+            const diasNombres = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            document.getElementById('badgeDiaActual').textContent = diasNombres[new Date().getDay()];
+
+            if (habitos.length === 0) {
+                contenedor.innerHTML = `
+                    <div class="text-center py-10 bg-slate-800/30 rounded-2xl border border-dashed border-slate-800">
+                        <p class="text-sm text-slate-400">No tienes hábitos registrados.</p>
+                        <p class="text-xs text-slate-500 mt-1">Toca en "Nuevo Hábito" abajo para comenzar.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            contenedor.innerHTML = habitos.map(h => {
+                const marcado = registros[hoyISO] && registros[hoyISO][h.id];
+                const racha = calcularRacha(h.id);
+                const stats = getEstadisticasMesHabito(h.id);
+                const iconoAlerta = getIconoAlerta(stats.pct);
+
+                return `
+                    <div class="bg-slate-800/60 border ${marcado ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-slate-700/60'} rounded-2xl p-3.5 flex items-center justify-between transition">
+                        
+                        <div onclick="toggleHabito(${h.id}, '${hoyISO}')" class="flex items-center gap-3 cursor-pointer flex-1 select-none pr-1">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg bg-slate-900 border border-slate-700 shrink-0">
+                                ${h.icono}
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-1.5">
+                                    <h4 class="font-bold text-sm text-white ${marcado ? 'line-through text-slate-400' : ''}">${h.nombre}</h4>
+                                    ${iconoAlerta}
+                                </div>
+                                <span class="text-[11px] text-amber-400 flex items-center gap-1 mt-0.5">
+                                    <i data-lucide="flame" class="w-3 h-3 fill-amber-400"></i> Racha: ${racha} días
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2 shrink-0">
+                            <div onclick="toggleHabito(${h.id}, '${hoyISO}')" class="cursor-pointer w-7 h-7 rounded-xl flex items-center justify-center transition active:scale-90 ${marcado ? 'bg-emerald-500 text-slate-950 font-bold' : 'border-2 border-slate-600'}">
+                                ${marcado ? '<i data-lucide="check" class="w-4 h-4 stroke-[3]"></i>' : ''}
+                            </div>
+                            <button type="button" onclick="editarHabito(${h.id}, event)" title="Editar hábito" class="p-1.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition active:scale-90">
+                                <i data-lucide="pencil" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // VISTA 2: SEMANAL
+        function renderizarSemanal() {
+            const contenedor = document.getElementById('listaHabitosSemanal');
+            const diasSemana = getDiasSemanaActual();
+            const hoyISO = formatISO(new Date());
+
+            if (habitos.length === 0) {
+                contenedor.innerHTML = `
+                    <div class="text-center py-10 bg-slate-800/30 rounded-2xl border border-dashed border-slate-800">
+                        <p class="text-sm text-slate-400">No tienes hábitos registrados.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            contenedor.innerHTML = habitos.map(h => {
+                const racha = calcularRacha(h.id);
+                let completadosSemana = 0;
+                const stats = getEstadisticasMesHabito(h.id);
+                const iconoAlerta = getIconoAlerta(stats.pct);
+
+                const botonesDias = diasSemana.map(d => {
+                    const esFuturo = d.iso > hoyISO;
+                    const esPasado = d.iso < hoyISO;
+                    const esHoy = d.iso === hoyISO;
+                    const marcado = registros[d.iso] && registros[d.iso][h.id];
+                    if (marcado) completadosSemana++;
+
+                    if (esFuturo) {
+                        return `
+                            <button type="button" disabled title="No puedes registrar días futuros" class="w-7 h-7 rounded-lg text-xs font-semibold flex items-center justify-center bg-slate-900/40 text-slate-600 opacity-25 cursor-not-allowed select-none">
+                                ${d.diaMes}
+                            </button>
+                        `;
+                    }
+
+                    if (esPasado) {
+                        return `
+                            <button type="button" disabled title="Día pasado (no editable)" class="w-7 h-7 rounded-lg text-xs font-semibold flex items-center justify-center cursor-default select-none transition ${
+                                marcado ? 'text-slate-950 font-bold opacity-80 shadow-inner' : 'bg-slate-900/70 text-slate-600 border border-slate-800/80'
+                            }" style="${marcado ? `background-color: ${h.color}` : ''}">
+                                ${marcado ? '<i data-lucide="check" class="w-3.5 h-3.5 stroke-[3]"></i>' : d.diaMes}
+                            </button>
+                        `;
+                    }
+
+                    return `
+                        <button type="button" onclick="toggleHabito(${h.id}, '${d.iso}')" title="Toca para marcar o desmarcar hoy" class="w-7 h-7 rounded-lg text-xs font-semibold flex items-center justify-center transition active:scale-90 ${
+                            marcado ? 'text-slate-950 font-bold shadow-sm' : 'bg-slate-800/90 text-white font-bold hover:bg-slate-700'
+                        } ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-900" style="${marcado ? `background-color: ${h.color}` : ''}">
+                            ${marcado ? '<i data-lucide="check" class="w-3.5 h-3.5 stroke-[3]"></i>' : d.diaMes}
+                        </button>
+                    `;
+                }).join('');
+
+                const progresoMeta = Math.min(Math.round((completadosSemana / h.meta) * 100), 100);
+
+                return `
+                    <div class="bg-slate-800/50 border border-slate-700/60 rounded-2xl p-3 space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-base">${h.icono}</span>
+                                <div>
+                                    <div class="flex items-center gap-1.5">
+                                        <h4 class="text-xs font-bold text-white leading-none">${h.nombre}</h4>
+                                        ${iconoAlerta}
+                                    </div>
+                                    <span class="text-[10px] text-slate-400 mt-1 block">${completadosSemana}/${h.meta} días esta semana</span>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-1 bg-slate-900/60 px-2 py-0.5 rounded-full border border-slate-700/50">
+                                    <i data-lucide="flame" class="w-3 h-3 text-amber-400 fill-amber-400"></i>
+                                    <span class="text-[11px] font-bold text-amber-300">${racha}d</span>
+                                </div>
+                                <button type="button" onclick="editarHabito(${h.id}, event)" title="Editar hábito" class="p-1 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition active:scale-90">
+                                    <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-[1fr,repeat(7,28px)] gap-1 items-center">
+                            <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden mr-1">
+                                <div class="h-full rounded-full transition-all duration-300" style="width: ${progresoMeta}%; background-color: ${h.color}"></div>
+                            </div>
+                            ${botonesDias}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // VISTA 3: MÉTRICAS
+        function setModoGrafico(modo) {
+            modoGrafico = modo;
+            const btnD = document.getElementById('btnModoDias');
+            const btnM = document.getElementById('btnModoMeses');
+            const titulo = document.getElementById('tituloGrafico');
+
+            if (modo === 'dias') {
+                btnD.className = 'text-[10px] font-bold px-2 py-1 rounded bg-indigo-600 text-white transition';
+                btnM.className = 'text-[10px] font-bold px-2 py-1 rounded text-slate-400 hover:text-white transition';
+                titulo.textContent = 'Cumplimiento por Día (Semana)';
+            } else {
+                btnM.className = 'text-[10px] font-bold px-2 py-1 rounded bg-indigo-600 text-white transition';
+                btnD.className = 'text-[10px] font-bold px-2 py-1 rounded text-slate-400 hover:text-white transition';
+                titulo.textContent = 'Cumplimiento Histórico por Mes';
+            }
+            renderizarEstadisticas();
+        }
+
+        function renderizarEstadisticas() {
+            const ctx = document.getElementById('chartDias').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+
+            if (modoGrafico === 'dias') {
+                const diasSemana = getDiasSemanaActual();
+                const nombresDias = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+                const conteoPorDia = [0, 0, 0, 0, 0, 0, 0];
+
+                diasSemana.forEach((d, idx) => {
+                    if (registros[d.iso]) {
+                        habitos.forEach(h => {
+                            if (registros[d.iso][h.id]) conteoPorDia[idx]++;
+                        });
+                    }
+                });
+
+                chartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: nombresDias,
+                        datasets: [{
+                            label: 'Completados',
+                            data: conteoPorDia,
+                            backgroundColor: '#6366f1',
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: Math.max(...conteoPorDia, habitos.length || 1),
+                                grid: { color: 'rgba(255,255,255,0.05)' },
+                                ticks: { color: '#94a3b8', stepSize: 1, font: { size: 10 } }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: '#cbd5e1', font: { size: 11, weight: 'bold' } }
+                            }
+                        }
+                    }
+                });
+            } else {
+                const mesesNombres = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                const conteoPorMes = Array(12).fill(0);
+                const anioActual = new Date().getFullYear();
+
+                Object.keys(registros).forEach(fechaISO => {
+                    const [y, m, d] = fechaISO.split('-').map(Number);
+                    if (y === anioActual) {
+                        const mesIdx = m - 1;
+                        habitos.forEach(h => {
+                            if (registros[fechaISO][h.id]) conteoPorMes[mesIdx]++;
+                        });
+                    }
+                });
+
+                chartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: mesesNombres,
+                        datasets: [{
+                            label: 'Hábitos Logrados',
+                            data: conteoPorMes,
+                            backgroundColor: '#10b981',
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: 'rgba(255,255,255,0.05)' },
+                                ticks: { color: '#94a3b8', stepSize: 5, font: { size: 10 } }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: '#cbd5e1', font: { size: 10, weight: 'bold' } }
+                            }
+                        }
+                    }
+                });
+            }
+
+            const listaR = document.getElementById('listaRachasDetalle');
+            listaR.innerHTML = habitos.map(h => {
+                const racha = calcularRacha(h.id);
+                const stats = getEstadisticasMesHabito(h.id);
+                const iconoAlerta = getIconoAlerta(stats.pct);
+                return `
+                    <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                        <div class="flex items-center gap-2">
+                            <span>${h.icono}</span>
+                            <span class="text-white font-medium">${h.nombre}</span>
+                            ${iconoAlerta}
+                        </div>
+                        <span class="font-extrabold text-amber-400 flex items-center gap-1">
+                            <i data-lucide="zap" class="w-3.5 h-3.5 fill-amber-400"></i> ${racha} días
+                        </span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // VISTA 4: POR MEJORAR (AL FINAL) CON MOTIVO PERSONALIZADO
+        function renderizarMejorar() {
+            const contenedor = document.getElementById('listaHabitosMejorar');
+            const hoyISO = formatISO(new Date());
+
+            if (habitos.length === 0) {
+                contenedor.innerHTML = `
+                    <div class="text-center py-10 bg-slate-800/30 rounded-2xl border border-dashed border-slate-800">
+                        <p class="text-sm text-slate-400">No hay hábitos disponibles.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Ordenados con los más rezagados en la cima
+            const habitosConScore = habitos.map(h => {
+                const stats = getEstadisticasMesHabito(h.id);
+                return { ...h, stats };
+            }).sort((a, b) => a.stats.pct - b.stats.pct || a.stats.diasCompletados - b.stats.diasCompletados);
+
+            contenedor.innerHTML = habitosConScore.map(h => {
+                const pct = h.stats.pct;
+                const dias = h.stats.diasCompletados;
+                const total = h.stats.diasTranscurridos;
+                const marcadoHoy = registros[hoyISO] && registros[hoyISO][h.id];
+                const motivoTexto = h.motivo && h.motivo.trim() !== '' 
+                    ? h.motivo 
+                    : 'Para alcanzar tu meta y ser constante día con día.';
+
+                let badgeAlerta = '';
+                let estiloBorde = 'border-slate-700/60';
+
+                if (pct < 40) {
+                    estiloBorde = 'border-rose-500/50 bg-rose-500/5';
+                    badgeAlerta = `
+                        <span class="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/40 animate-pulse">
+                            🚨 CRÍTICO: ${pct}%
+                        </span>
+                    `;
+                } else if (pct < 70) {
+                    estiloBorde = 'border-amber-500/40 bg-amber-500/5';
+                    badgeAlerta = `
+                        <span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            ⚠️ ATENCIÓN: ${pct}%
+                        </span>
+                    `;
+                } else {
+                    estiloBorde = 'border-slate-700/60 bg-slate-800/40';
+                    badgeAlerta = `
+                        <span class="inline-flex items-center gap-1 text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            ✅ ESTABLE: ${pct}%
+                        </span>
+                    `;
+                }
+
+                return `
+                    <div class="bg-slate-800/60 border ${estiloBorde} rounded-2xl p-3.5 space-y-2.5 transition">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2.5">
+                                <span class="text-xl">${h.icono}</span>
+                                <div>
+                                    <h4 class="font-bold text-sm text-white">${h.nombre}</h4>
+                                    <span class="text-[11px] text-slate-400 block">${dias} de ${total} días cumplidos este mes</span>
+                                </div>
+                            </div>
+                            <div>
+                                ${badgeAlerta}
+                            </div>
+                        </div>
+
+                        <!-- Frase / Razón de Por qué mejorar -->
+                        <div class="bg-slate-900/80 border border-slate-700/70 rounded-xl p-2.5 flex items-start gap-2">
+                            <i data-lucide="target" class="w-4 h-4 text-amber-400 shrink-0 mt-0.5"></i>
+                            <p class="text-xs text-slate-200 leading-snug font-medium">
+                                <span class="text-amber-300 font-bold">Por qué mejorar:</span> "${motivoTexto}"
+                            </p>
+                        </div>
+
+                        <!-- Barra de progreso mensual -->
+                        <div class="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden border border-slate-700/50">
+                            <div class="h-full rounded-full transition-all duration-300 ${pct < 40 ? 'bg-rose-500' : pct < 70 ? 'bg-amber-400' : 'bg-emerald-500'}" style="width: ${pct}%"></div>
+                        </div>
+
+                        <!-- Acciones directas -->
+                        <div class="flex items-center justify-between pt-1 border-t border-slate-700/40 text-xs">
+                            <span class="text-[11px] text-slate-400">
+                                Hoy: <strong class="${marcadoHoy ? 'text-emerald-400' : 'text-rose-400'}">${marcadoHoy ? 'Completado ✅' : 'Pendiente ❌'}</strong>
+                            </span>
+                            
+                            ${!marcadoHoy ? `
+                                <button type="button" onclick="toggleHabito(${h.id}, '${hoyISO}'); setTab('mejorar');" class="bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold px-3 py-1 rounded-lg text-[11px] transition">
+                                    Marcar Hoy
+                                </button>
+                            ` : `
+                                <span class="text-[11px] text-slate-500 italic">Listo por hoy</span>
+                            `}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderizarKPIs() {
+            const hoy = new Date();
+            const hoyISO = formatISO(hoy);
+            const anioActual = hoy.getFullYear();
+            const mesActual = hoy.getMonth();
+            const diaDelMes = hoy.getDate();
+            const mesesNombres = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+            let hechosHoy = 0;
+            if (registros[hoyISO]) {
+                habitos.forEach(h => {
+                    if (registros[hoyISO][h.id]) hechosHoy++;
+                });
+            }
+            document.getElementById('kpiCompletadosHoy').textContent = `${hechosHoy} / ${habitos.length}`;
+
+            let totalMarcadosMes = 0;
+            for (let dia = 1; dia <= diaDelMes; dia++) {
+                const fTemp = new Date(anioActual, mesActual, dia);
+                const isoTemp = formatISO(fTemp);
+                if (registros[isoTemp]) {
+                    habitos.forEach(h => {
+                        if (registros[isoTemp][h.id]) totalMarcadosMes++;
+                    });
+                }
+            }
+
+            const totalPosibleMes = (diaDelMes * habitos.length);
+            const pctMensual = totalPosibleMes > 0 ? Math.round((totalMarcadosMes / totalPosibleMes) * 100) : 0;
+            
+            document.getElementById('kpiMesLabel').textContent = `Mes (${mesesNombres[mesActual]})`;
+            document.getElementById('kpiCumplimiento').textContent = `${pctMensual}%`;
+
+            let maxRacha = 0;
+            habitos.forEach(h => {
+                const r = calcularRacha(h.id);
+                if (r > maxRacha) maxRacha = r;
+            });
+            document.getElementById('kpiMejorRacha').innerHTML = `<i data-lucide="zap" class="w-3.5 h-3.5 fill-amber-400"></i> ${maxRacha}d`;
+        }
+
+        function setTab(tab) {
+            tabActual = tab;
+            const views = { hoy: 'viewHoy', semanal: 'viewSemanal', grafico: 'viewGrafico', mejorar: 'viewMejorar' };
+            const tabs = { hoy: 'tabHoy', semanal: 'tabSemanal', grafico: 'tabGrafico', mejorar: 'tabMejorar' };
+
+            Object.keys(views).forEach(k => {
+                document.getElementById(views[k]).classList.toggle('hidden', k !== tab);
+                const btn = document.getElementById(tabs[k]);
+                if (k === tab) {
+                    btn.className = 'py-1.5 text-[11px] font-bold rounded-lg bg-indigo-600 text-white shadow-sm transition text-center truncate flex items-center justify-center gap-1';
+                } else {
+                    btn.className = 'py-1.5 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white transition text-center truncate flex items-center justify-center gap-1';
+                }
+            });
+
+            actualizarTextoCabecera();
+            if (tab === 'mejorar') renderizarMejorar();
+            if (tab === 'grafico') renderizarEstadisticas();
+            lucide.createIcons();
+        }
+
+        function selectColor(hex, btnElement) {
+            document.getElementById('habitoColor').value = hex;
+            document.querySelectorAll('#colorPicker button').forEach(b => {
+                b.classList.remove('ring-2', 'ring-white');
+            });
+            if (btnElement) {
+                btnElement.classList.add('ring-2', 'ring-white');
+            } else {
+                const matchBtn = Array.from(document.querySelectorAll('#colorPicker button')).find(b => b.className.includes(hex));
+                if (matchBtn) matchBtn.classList.add('ring-2', 'ring-white');
+            }
+        }
+
+        document.getElementById('formHabito').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const editId = document.getElementById('habitoIdEdit').value;
+            const nombre = document.getElementById('habitoNombre').value.trim();
+            const icono = document.getElementById('habitoIcono').value.trim() || '⚡';
+            const meta = parseInt(document.getElementById('habitoMeta').value) || 5;
+            const motivo = document.getElementById('habitoMotivo').value.trim();
+            const color = document.getElementById('habitoColor').value;
+
+            if (editId) {
+                const idx = habitos.findIndex(h => h.id == editId);
+                if (idx !== -1) {
+                    habitos[idx].nombre = nombre;
+                    habitos[idx].icono = icono;
+                    habitos[idx].meta = meta;
+                    habitos[idx].motivo = motivo;
+                    habitos[idx].color = color;
+                }
+            } else {
+                habitos.push({ id: Date.now(), nombre, icono, meta, motivo, color });
+            }
+
+            guardarStorage();
+            this.reset();
+            cerrarModalHabito();
+        });
+
+        function actualizarTodo() {
+            actualizarFraseDelDia();
+            actualizarTextoCabecera();
+            renderizarKPIs();
+            renderizarSemanal();
+            renderizarHoy();
+            if (tabActual === 'mejorar') renderizarMejorar();
+            if (tabActual === 'grafico') renderizarEstadisticas();
+            lucide.createIcons();
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            cargarStorage();
+            actualizarTodo();
+        });
+    </script>
+</body>
+</html>
